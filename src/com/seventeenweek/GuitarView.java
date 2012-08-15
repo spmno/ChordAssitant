@@ -19,13 +19,15 @@ public class GuitarView extends SurfaceView implements SurfaceHolder.Callback{
 		holder.addCallback(this);
 		setFocusable(true);
 		setFocusableInTouchMode(true);
+		ChordGenerator.getInstance().setContext(context);
+		ChordGenerator.getInstance().genChord();
 	}
 	
 	public void drawChordText(Canvas canvas) {
 		if (canvas != null) {
 			int x = width - width/8;
 			int y = height/8;
-			String text = "C";
+			String text = ChordGenerator.getInstance().getCurrentChordName();
 			Paint chordPaint = new Paint();
 			chordPaint.setColor(Color.RED);
 			chordPaint.setTextSize(width/10);
@@ -36,34 +38,13 @@ public class GuitarView extends SurfaceView implements SurfaceHolder.Callback{
 	private void drawGuitar(Canvas canvas) {
 		if (canvas != null) {
 			canvas.drawColor(Color.BLACK);
-			int elementBlock = height/12;
+			
 			
 			Paint chordPaint = new Paint();
 			chordPaint.setStrokeWidth(5);
 			chordPaint.setColor(Color.WHITE);
 			
-			Point chordPoint[][] = new Point[6][2];
-			for (int i = 0; i < 6; ++i) {
-				for (int j = 0; j < 2; ++j) {
-					chordPoint[i][j] = new Point();
-				}
-			}
-			chordPoint[0][0].x = 0;
-			chordPoint[0][0].y = elementBlock;
-			chordPoint[0][1].x = width;
-			chordPoint[0][1].y = elementBlock;
-			
-			for (int i = 1; i < 5; ++i) {
-				chordPoint[i][0].x = 0;
-				chordPoint[i][0].y = elementBlock*2*i + elementBlock;
-				chordPoint[i][1].x = width;
-				chordPoint[i][1].y = elementBlock*2*i + elementBlock;
-			}
-			
-			chordPoint[5][0].x = 0;
-			chordPoint[5][0].y = height - elementBlock;
-			chordPoint[5][1].x = width;
-			chordPoint[5][1].y = height - elementBlock;
+			Point[][] chordPoint = SeparatedPointContainer.getInstance().getSeparatedPoints();
 			
 			for (int i = 0; i < 6; ++i) {
 				canvas.drawLine(chordPoint[i][0].x, chordPoint[i][0].y, chordPoint[i][1].x, chordPoint[i][1].y, chordPaint);
@@ -78,6 +59,11 @@ public class GuitarView extends SurfaceView implements SurfaceHolder.Callback{
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		int pointerCount = event.getPointerCount();
+		Point[] touchPoint = new Point[pointerCount];
+		
+		for (int i = 0; i < pointerCount; ++i) {
+			touchPoint[i] = new Point();
+		}
 		Canvas canvas = getHolder().lockCanvas();
 		Paint touchPaint = new Paint();
 		touchPaint.setColor(Color.RED);
@@ -89,12 +75,17 @@ public class GuitarView extends SurfaceView implements SurfaceHolder.Callback{
 				
 			}else {
 				for (int i = 0; i < pointerCount; ++i) {
-					int x = (int) event.getX(i);
-					int y = (int) event.getY(i);
+					int x = touchPoint[i].x = (int) event.getX(i);
+					int y = touchPoint[i].y = (int) event.getY(i);
 					canvas.drawCircle(x, y, 40, touchPaint);
 				}
 			}
 			getHolder().unlockCanvasAndPost(canvas);
+		}
+		
+		ChordJudge judge = new ChordJudge();
+		if (judge.judge(touchPoint)) {
+			ChordGenerator.getInstance().genChord();
 		}
 		
 		
